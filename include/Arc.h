@@ -10,7 +10,7 @@ private:
     double wireless_coverage; // Fraction [0,1]
 
 public:
-    Arc(int from, int to, double distance, double wireless_coverage)
+    Arc(size_t from, size_t to, double distance, double cost)
         : from(from), to(to), distance(distance), wireless_coverage(wireless_coverage) {
     }
 

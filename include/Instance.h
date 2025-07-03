@@ -21,7 +21,7 @@ struct InstanceSolution {
     std::string solver_used;
 };
 
-std::unique_ptr<InstanceSolution> solution;
+extern std::unique_ptr<InstanceSolution> solution;
 
 class Instance {
 private:

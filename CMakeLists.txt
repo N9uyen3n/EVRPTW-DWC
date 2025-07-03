@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.31)
 project(Test1)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 
 # CPLEX directory
 set(CPLEX_DIR "D:/Program Files/IBM/ILOG/CPLEX_Studio2211")

@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <ilcplex/ilocplex.h>
 
 // Helper struct for dummy station representation (if needed)
 struct DummyStation {

@@ -11,6 +11,8 @@
 #include <iostream>
 #include <iomanip>
 
+std::unique_ptr<InstanceSolution> solution;
+
 
 void Instance::parse_instance_file(const std::string& filename) {
     std::ifstream file(filename);
