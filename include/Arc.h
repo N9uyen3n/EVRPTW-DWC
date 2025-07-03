@@ -7,11 +7,12 @@ class Arc {
 private:
     int from, to;
     double distance;
-    double wireless_coverage;  // Fraction [0,1]
+    double wireless_coverage; // Fraction [0,1]
 
 public:
     Arc(int from, int to, double distance, double wireless_coverage)
-        : from(from), to(to), distance(distance), wireless_coverage(wireless_coverage) {}
+        : from(from), to(to), distance(distance), wireless_coverage(wireless_coverage) {
+    }
 
     int get_from() const { return from; }
     int get_to() const { return to; }
