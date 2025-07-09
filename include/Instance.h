@@ -9,19 +9,6 @@
 #include <cmath>
 #include <memory>
 
-// tạo mọt cấu trúc dùng để lưu trữ các kết quả cuối cùng sau khi giải của Instance
-struct InstanceSolution {
-    double objective_value;
-    int num_vehicles;
-    double total_distance;
-    double total_time;
-    std::vector<std::vector<int> > routes;
-    std::map<int, std::map<std::string, double> > charging_details;
-    double computation_time;
-    std::string solver_used;
-};
-
-extern std::unique_ptr<InstanceSolution> solution;
 
 class Instance {
 private:
@@ -47,18 +34,55 @@ private:
     }
 
 public:
+
+    //Cấu trúc dùng để lưu trữ các kết quả cuối cùng sau khi giải của Instance
+    struct InstanceSolution {
+        double objective_value;
+        int num_vehicles;
+        double total_distance;
+        double total_time;
+        std::vector<std::vector<int> > routes;
+        std::map<int, std::map<std::string, double> > charging_details;
+        double computation_time;
+        std::string solver_used;
+    };
+
+    std::unique_ptr<InstanceSolution> solution;
+
+
     // Instance() : battery_capacity(0), cargo_capacity(0), average_speed(0), load_factor(0),
     //              alpha(0), beta(0), wireless_charge_rate(0) {}
 
+    Instance(const std::vector<Node> &nodes, const std::vector<Arc> &arcs, const Node &depot,
+        const std::vector<Node> &customers, const std::vector<Node> &stations, const std::vector<Node> &dummy_stations,
+        double battery_capacity, double cargo_capacity, double average_speed, double consumption_rate,
+        double inverse_refueling_rate, double load_factor, double alpha, double beta, double wireless_charge_rate,
+        const std::map<std::pair<int, int>, double> &wireless_coverage)
+        : nodes(nodes),
+          arcs(arcs),
+          depot(depot),
+          customers(customers),
+          stations(stations),
+          dummy_stations(dummy_stations),
+          battery_capacity(battery_capacity),
+          cargo_capacity(cargo_capacity),
+          average_speed(average_speed),
+          consumption_rate(consumption_rate),
+          inverse_refueling_rate(inverse_refueling_rate),
+          load_factor(load_factor),
+          alpha(alpha),
+          beta(beta),
+          wireless_charge_rate(wireless_charge_rate),
+          wireless_coverage(wireless_coverage){
+    }
+
     Instance() : depot(), battery_capacity(0), cargo_capacity(0), average_speed(0), load_factor(0),
-             alpha(0), beta(0), wireless_charge_rate(0) {}
+                 alpha(0), beta(0), wireless_charge_rate(0) {}
 
     // Parse instance from file
     void parse_instance_file(const std::string& filename);
-
     // Set wireless coverage for arcs
     void set_wireless_coverage(const std::string& pattern);
-
     // Create dummy nodes for multiple station visits
     void create_dummy_stations(int max_visits);
 
@@ -84,69 +108,23 @@ public:
         return (it != wireless_coverage.end()) ? it->second : 0.0;
     }
 
-    void set_nodes(const std::vector<Node> &nodes) {
-        this->nodes = nodes;
-    }
 
-    void set_arcs(const std::vector<Arc> &arcs) {
-        this->arcs = arcs;
-    }
-
-    void set_depot(const Node &depot) {
-        this->depot = depot;
-    }
-
-    void set_customers(const std::vector<Node> &customers) {
-        this->customers = customers;
-    }
-
-    void set_stations(const std::vector<Node> &stations) {
-        this->stations = stations;
-    }
-
-    void set_dummy_stations(const std::vector<Node> &dummy_stations) {
-        this->dummy_stations = dummy_stations;
-    }
-
-    void set_battery_capacity(double battery_capacity) {
-        this->battery_capacity = battery_capacity;
-    }
-
-    void set_cargo_capacity(double cargo_capacity) {
-        this->cargo_capacity = cargo_capacity;
-    }
-
-    void set_average_speed(double average_speed) {
-        this->average_speed = average_speed;
-    }
-
-    void set_consumption_rate(double consumption_rate) {
-        this->consumption_rate = consumption_rate;
-    }
-
-    void set_inverse_refueling_rate(double inverse_refueling_rate) {
-        this->inverse_refueling_rate = inverse_refueling_rate;
-    }
-
-    void set_load_factor(double load_factor) {
-        this->load_factor = load_factor;
-    }
-
-    void set_alpha(double alpha) {
-        this->alpha = alpha;
-    }
-
-    void set_beta(double beta) {
-        this->beta = beta;
-    }
-
-    void set_wireless_charge_rate(double wireless_charge_rate) {
-        this->wireless_charge_rate = wireless_charge_rate;
-    }
-
-    void set_wireless_coverage1(const std::map<std::pair<int, int>, double> &wireless_coverage) {
-        this->wireless_coverage = wireless_coverage;
-    }
+    void set_nodes(const std::vector<Node> &nodes) {this->nodes = nodes;}
+    void set_arcs(const std::vector<Arc> &arcs) {this->arcs = arcs;}
+    void set_depot(const Node &depot) {this->depot = depot;}
+    void set_customers(const std::vector<Node> &customers) {this->customers = customers;}
+    void set_stations(const std::vector<Node> &stations) {this->stations = stations;}
+    void set_dummy_stations(const std::vector<Node> &dummy_stations) {this->dummy_stations = dummy_stations;}
+    void set_battery_capacity(double battery_capacity) {this->battery_capacity = battery_capacity;}
+    void set_cargo_capacity(double cargo_capacity) {this->cargo_capacity = cargo_capacity;}
+    void set_average_speed(double average_speed) {this->average_speed = average_speed;}
+    void set_consumption_rate(double consumption_rate) {this->consumption_rate = consumption_rate;}
+    void set_inverse_refueling_rate(double inverse_refueling_rate) {this->inverse_refueling_rate = inverse_refueling_rate;}
+    void set_load_factor(double load_factor) {this->load_factor = load_factor;}
+    void set_alpha(double alpha) {this->alpha = alpha;}
+    void set_beta(double beta) {this->beta = beta;}
+    void set_wireless_charge_rate(double wireless_charge_rate) {this->wireless_charge_rate = wireless_charge_rate;}
+    void set_wireless_coverage1(const std::map<std::pair<int, int>, double> &wireless_coverage) {this->wireless_coverage = wireless_coverage;}
 
 
     void print_summary() const;

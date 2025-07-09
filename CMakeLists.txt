@@ -66,4 +66,42 @@ add_executable(TestInstance test/TestInstance.cpp
         src/Node.cpp
         src/Arc.cpp
         src/Instance.cpp
+)
+
+add_executable(TestCPLEX  test/TestCPLEX.cpp
+)
+target_link_libraries(TestCPLEX PRIVATE
+        ${ILOCPLEX_LIBRARY}
+        ${CPLEX_LIBRARY}
+        ${CONCERT_LIBRARY}
+)
+target_compile_definitions(TestCPLEX PRIVATE _ITERATOR_DEBUG_LEVEL=0)
+if(MSVC)
+       set_property(TARGET TestCPLEX PROPERTY
+               MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
        )
+endif()
+
+# TestMILPSolver
+add_executable(TestMILPSolver  test/TestMILPSolver.cpp
+        include/Node.h
+        include/Arc.h
+        include/Instance.h
+        include/SolverBase.h
+        include/MILPSolver.h
+        src/MILPSolver.cpp
+        src/Instance.cpp
+        src/Arc.cpp
+        src/Node.cpp
+)
+target_link_libraries(TestMILPSolver PRIVATE
+        ${ILOCPLEX_LIBRARY}
+        ${CPLEX_LIBRARY}
+        ${CONCERT_LIBRARY}
+)
+target_compile_definitions(TestMILPSolver PRIVATE _ITERATOR_DEBUG_LEVEL=0)
+if(MSVC)
+       set_property(TARGET TestMILPSolver PROPERTY
+               MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+       )
+endif()

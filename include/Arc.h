@@ -9,9 +9,11 @@ private:
     double distance;
     double wireless_coverage; // Fraction [0,1]
 
+    double calculate_distance();
+
 public:
-    Arc(size_t from, size_t to, double distance, double cost)
-        : from(from), to(to), distance(distance), wireless_coverage(wireless_coverage) {
+    Arc(size_t from, size_t to)
+        : from(from), to(to), distance(calculate_distance()), wireless_coverage(wireless_coverage) {
     }
 
     int get_from() const { return from; }
@@ -23,14 +25,11 @@ public:
     void set_wireless_coverage(double coverage) { wireless_coverage = coverage; }
 
     // Calculate travel time based on average speed
-    double calculate_travel_time(double average_speed) const {
-        return distance / average_speed;
-    }
+    double calculate_travel_time(double average_speed) const {return distance / average_speed;}
 
     // Calculate wireless charge gained on this arc
-    double calculate_wireless_charge(double wireless_charge_rate) const {
-        return wireless_charge_rate * distance * wireless_coverage;
-    }
+    double calculate_wireless_charge(double wireless_charge_rate) const {return wireless_charge_rate
+        * distance * wireless_coverage;}
 
     std::string to_string() const {
         return "Arc(from: " + std::to_string(from) + ", to: " + std::to_string(to) +

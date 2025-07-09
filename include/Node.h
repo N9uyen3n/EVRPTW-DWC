@@ -35,40 +35,15 @@ public:
     double get_due_date() const { return due_date; }
     double get_service_time() const { return service_time; }
 
-    // Setter methods if needed
     void set_type(NodeType t) { type = t; }
-
-    void set_string_id(const std::string &string_id) {
-        stringID = string_id;
-    }
-
-    void set_int_id(int int_id) {
-        intID = int_id;
-    }
-
-    void set_x(double x) {
-        this->x = x;
-    }
-
-    void set_y(double y) {
-        this->y = y;
-    }
-
-    void set_demand(double demand) {
-        this->demand = demand;
-    }
-
-    void set_ready_time(double ready_time) {
-        this->ready_time = ready_time;
-    }
-
-    void set_due_date(double due_date) {
-        this->due_date = due_date;
-    }
-
-    void set_service_time(double service_time) {
-        this->service_time = service_time;
-    }
+    void set_string_id(const std::string &string_id) {stringID = string_id;}
+    void set_int_id(int int_id) {intID = int_id;}
+    void set_x(double x) {this->x = x;}
+    void set_y(double y) {this->y = y;}
+    void set_demand(double demand) {this->demand = demand;}
+    void set_ready_time(double ready_time) {this->ready_time = ready_time;}
+    void set_due_date(double due_date) {this->due_date = due_date;}
+    void set_service_time(double service_time) {this->service_time = service_time;}
 
     std::string to_string() const {
         return "Node(ID: " + stringID + ", Type: " + std::to_string(type) +

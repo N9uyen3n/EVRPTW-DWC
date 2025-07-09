@@ -4,24 +4,26 @@
 
 #include "Instance.h"
 
-// Solution storage
-struct Solution {
-    double objective_value;
-    int num_vehicles;
-    double total_distance;
-    double total_time;
-    std::vector<std::vector<int> > routes;
-    std::map<int, std::map<std::string, double> > charging_details;
-    double computation_time;
-    std::string solver_used;
-};
-
-
 class SolverBase {
 protected:
     const Instance &instance;
 
+
 public:
+    // Solution storage
+    struct Solution {
+        double objective_value;
+        int num_vehicles;
+        double total_distance;
+        double total_time;
+        std::vector<std::vector<int> > routes;
+        std::map<int, std::map<int, double> > charging_details;
+        double computation_time;
+        std::string solver_used;
+    };
+
+    std::unique_ptr<Solution> solution;
+
     SolverBase(const Instance &inst) : instance(inst) {
     }
 
