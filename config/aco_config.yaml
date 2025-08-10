@@ -1,0 +1,17 @@
+max_iterations: 1000
+global_update_rho: 0.1
+fixed_vehicles: null
+# Parameters for the local pheromone update (Formula 19)
+local_update_xi: 0.1
+
+acs_dist:
+  num_ants: 10
+  alpha: 1
+  beta: 1
+  q0: 0.7
+
+acs_vei:
+  num_ants: 10
+  alpha: 1
+  beta: 1
+  q0: 0.7

@@ -1,0 +1,758 @@
+=================================================================
+
+CHU THICH KY HIEU
+=================================================================
+
+Chu cai Hy Lap se duoc viet day du, vi du: tau, eta, alpha, beta, rho, xi, delta.
+
+Chi so duoi (subscript) duoc bieu thi bang dau gach duoi _, vi du: tau_ij.
+
+Chi so tren (superscript) duoc bieu thi bang dau mu ^, vi du: T^best viet la T_best.
+
+Phep gan gia tri <- duoc dung thay cho mui ten.
+
+Phep nhan la *, phep chia la /.
+
+Nguon tham khao tu tai lieu se duoc trich dan bang ``.
+
+=================================================================
+
+
+PHAN 1: MO TA BAI TOAN - E-VRPTW
+=================================================================
+
+[cite_start]Bai toan dinh tuyen xe dien co rang buoc thoi gian (Electric Vehicle Routing Problem with Time Windows - E-VRPTW) la mot bai toan toi uu to hop NP-hard[cite: 37].
+
+1. Dinh hinh Do thi:
+[cite_start]Bai toan duoc dinh nghia tren mot do thi hoan chinh G = (N, A)[cite: 54].
+
+Tap hop Nut N:
+
+Depot: nut {0} (node_type = 'd' trong Node).
+
+Customers I (node_type = 'c').
+
+Charging stations copies F' (node_type = 'f').
+
+Cung (i, j) co:
+
+Khoang cach Euclidean d_ij (luu trong EvrptwGraph.node_dist_mat).
+
+Thoi gian di chuyen t_ij = d_ij / velocity.
+
+2. Thuoc tinh & Rang buoc:
+
+Customer i:
+
+demand delta_i (Node.demand)
+
+service_time s_i (Node.service_time)
+
+time window [e_i, l_i] (Node.ready_time, Node.due_date)
+
+EV:
+
+load capacity C (EvrptwGraph.load_capacity)
+
+battery capacity Q (EvrptwGraph.tank_capacity)
+
+energy consumption rate h (EvrptwGraph.fuel_consumption_rate)
+
+charging rate g (EvrptwGraph.charging_rate)
+
+Charging station:
+
+service_time (may include service_time in node)
+
+possible copies to allow multiple visits (F' in model)
+
+3. Muc tieu:
+
+Hierarchical objective (phancap):
+
+Minimize number of EVs used (primary).
+
+Minimize total traveled distance (secondary).
+
+Trong SSCI22: giai phap co it xe hon luon tot hon du co quang duong lon hon.
+
+Ràng buộc bắt buộc trong EVRPTW (theo SSCI22 và chuẩn mô hình)
+Phải phục vụ tất cả khách hàng
+
+Mỗi khách hàng 
+𝑖
+i (node_type = 'c') xuất hiện chính xác 1 lần trong một route.
+
+Không được bỏ sót hoặc ghé lại nhiều lần (trừ khi khách hàng xuất hiện như điểm copy trong các biến mô hình MILP, nhưng trong lộ trình thực tế vẫn chỉ 1 lần).
+
+Cửa sổ thời gian (Time Window Constraint)
+
+Nếu xe đến trước 
+𝑒
+𝑖
+e 
+i
+​
+  (ready_time) thì phải chờ đến đúng 
+𝑒
+𝑖
+e 
+i
+​
+  mới bắt đầu phục vụ.
+
+Nếu xe đến sau 
+𝑙
+𝑖
+l 
+i
+​
+  (due_date) thì route không khả thi.
+
+Áp dụng cho cả khách hàng và trạm sạc nếu dữ liệu trạm có time window.
+
+Tải trọng (Capacity Constraint)
+
+Xe xuất phát từ depot với tải trọng ban đầu 
+0
+0.
+
+Khi ghé khách hàng, tải trọng tăng thêm demand_i.
+
+Không được vượt quá tải tối đa 
+𝐶
+C (EvrptwGraph.load_capacity).
+
+Khi về depot, tải trọng reset về 0.
+
+Dung lượng pin (Battery Constraint)
+
+Xe bắt đầu với pin đầy 
+𝑄
+Q (EvrptwGraph.tank_capacity).
+
+Khi di chuyển từ 
+𝑖
+i đến 
+𝑗
+j: pin giảm \text{battery_usage} = d_{ij} \times h
+(h = fuel_consumption_rate).
+
+Nếu không đủ pin để đến điểm kế tiếp thì bắt buộc ghé trạm sạc phù hợp.
+
+Tại trạm sạc:
+
+Nếu mô hình giả định sạc đầy → pin = Q sau khi sạc.
+
+Nếu partial recharge → pin tăng theo mức cần thiết và tốc độ sạc charging_rate.
+
+Không được để pin < 0 tại bất kỳ thời điểm nào.
+
+Ràng buộc depot
+
+Mỗi route bắt đầu và kết thúc tại depot (node 0).
+
+Số lượng route (vehicle used) ≤ số xe tối đa cho phép.
+
+Liên tục tuyến đường (Route Continuity)
+
+Không có “nhảy cóc” — mỗi node liên tiếp trong route phải là một cung hợp lệ trên đồ thị 
+𝐺
+G.
+
+Cung phải khả thi về khoảng cách, pin, thời gian và tải trọng.
+
+Nhấn mạnh trong code LocalSearch và _check_feasible()
+Trong hàm _check_feasible(route) cần:
+
+Check 1: Route bắt đầu và kết thúc bằng depot 0.
+
+Check 2: Mỗi khách hàng trong route không trùng lặp.
+
+Check 3: Tải trọng ≤ C tại mọi thời điểm.
+
+Check 4: Pin ≥ 0 tại mọi thời điểm (nếu không đủ thì return False).
+
+Check 5: Thời gian đến và phục vụ trong khoảng [ready_time, due_date].
+
+Check 6: Khi tới trạm sạc thì update pin và thời gian s
+
+=================================================================
+
+PHAN 2: GIAI THICH THUAT TOAN - MULTIPLE ANT COLONY SYSTEM (MACS)
+=================================================================
+
+[cite_start]MACS su dung hai dan kien: ACS-DIST (toi thieu quang duong) va ACS-VEI (toi thieu so xe). Cac dan kien chay song song va chia se thong tin T_best[cite: 20, 99-106].
+
+2.1 Tong quan luong cuc:
+MACS la coordinator: khoi tao T_best bang nearest neighbor, xac dinh m = num vehicles.
+
+Chay lap:
+
+Start ACS_DIST with sigma = m (so xe hien tai).
+
+Start ACS_VEI with sigma = m - 1 (thay doi muc tieu).
+
+Khi ACS_VEI tim duoc giai phap feasible voi m-1 xe -> cap nhat m, reset/khong reset pheromone theo thiet ke.
+
+ACS_DIST su dung CROSS exchange local search de cai thien quang duong.
+
+2.2 Cac thanh phan chinh:
+Ant construct solution (Algorithm 2 trong bai bao):
+
+Tu node i, chon j in N_i^k (feasible neighbors) dua tren:
+
+Pheromone tau_ij
+
+Heuristic eta_ij^k
+
+Quy tac: voi prob q0 -> chon best, nguoc lai chon theo xac suat p_ij^k.
+
+Neu khong co feasible customer thi quay ve depot.
+
+Neu khong du nang luong den j thi chen tram sac s = argmin_{l in F}{d_il + d_lj} (select_closest_station).
+
+Sau khi xay dung xong, chen cac unvisited customers vao vi tri tot nhat thoa rang buoc (insertion heuristic).
+
+Heuristic:
+
+ACS-DIST: eta_ij^k <- 1 / max(1, (dt_j - ct_k)*(l_j - ct_k)).
+
+ACS-VEI: eta_ij^k <- 1 / max(1, (dt_j - ct_k)*(l_j - ct_k) - in_j) ; in_j la so lan j bi bo sot.
+
+Pheromone update:
+
+Local: tau_ij <- (1 - xi) * tau_ij + xi * tau_0 khi di qua canh (i,j).
+
+Global: tau_ij <- (1 - rho) * tau_ij + rho / C_bs tren cac canh cua T_bs (best-so-far).
+
+=================================================================
+
+PHAN 3: PSEUDOCODE TOAN BO THUAT TOAN (de luu vao .txt)
+=================================================================
+
+Algorithm 1: MACS (chuan tu SSCI22, co sua de ho tro weighted-sum neu can)
+r
+Sao chép
+Chỉnh sửa
+Input: instance_file, params
+Output: T_best (path, distance, num_vehicles)
+
+1. Graph <- EvrptwGraph(instance_file, rho <- params['rho'])
+2. T_best <- nearest_neighbor_solution(Graph)  # (path, Cnn, vehicles)
+3. m <- T_best.num_vehicles
+
+4. Initialize ACS_DIST with sigma <- m
+5. Initialize ACS_VEI with sigma <- m - 1
+
+6. while not termination_condition do
+7.     start ACS_DIST.run()    # builds solutions with sigma = m
+8.     start ACS_VEI.run()     # tries sigma = m - 1
+
+9.     # Collect best from ACS_DIST
+10.    if ACS_DIST.best_solution_in_iteration exists:
+11.        dist_solution <- ACS_DIST.best_solution_in_iteration
+12.        dist_distance <- ACS_DIST.best_distance_in_iteration
+13.        num_vehicles_dist <- count_depots(dist_solution)
+
+14.        if ObjectiveScore(num_vehicles_dist, dist_distance) < ObjectiveScore(T_best):
+15.            T_best <- (dist_solution, dist_distance, num_vehicles_dist)
+16.            Graph.global_update_pheromone(T_best.path, T_best.distance)
+
+17.    # Collect best from ACS_VEI (seeking fewer vehicles)
+18.    if ACS_VEI.best_solution_in_iteration exists:
+19.        vei_solution <- ACS_VEI.best_solution_in_iteration
+20.        num_vehicles_vei <- count_depots(vei_solution)
+21.        vei_distance <- ACS_VEI.best_distance_in_iteration
+
+22.        # In original MACS: if num_vehicles_vei < m then update and reset
+23.        if num_vehicles_vei < m:    # OR compare using ObjectiveScore
+24.            m <- num_vehicles_vei
+25.            T_best <- (vei_solution, vei_distance, num_vehicles_vei)
+26.            Graph.pheromone_mat[:] <- Graph.tau_0
+27.            Graph.global_update_pheromone(T_best.path, T_best.distance)
+28.            reinitialize ACS_DIST and ACS_VEI with updated sigma
+29. end while
+
+Function ObjectiveScore(num_vehicles, distance, w1=0.7, w2=0.3):
+    # If you want soft trade-off, replace hierarchical (strict) with weighted sum:
+    # Normalize if wished, e.g., by current best or by instance-based minima/maxima.
+    return w1 * num_vehicles + w2 * distance
+Algorithm 2: Ant solution construction (tinh toan tao loi giai)
+r
+Sao chép
+Chỉnh sửa
+Input: Graph, sigma (max vehicles for this ant)
+Output: complete solution path, distance
+
+1. Initialize path T_k <- [0]
+2. vehicles_used <- 1
+3. while vehicles_used <= sigma:
+4.     current_pos <- last node in current route
+5.     N_i^k <- feasible_unvisited_customers(current_pos)  # check capacity, TW, energy (lookahead)
+6.     if N_i^k empty:
+7.         append depot 0 to path (end current vehicle)
+8.         vehicles_used <- vehicles_used + 1
+9.         continue
+10.    choose next j in N_i^k:
+11.        q <- rand()
+12.        if q <= q_0: j <- argmax_{l in N_i^k} tau_il^alpha * eta_il^beta
+13.        else: sample j with probability p_ij^k proportional to tau_il^alpha * eta_il^beta
+14.    if not enough energy to go i->j:
+15.        s <- select_closest_station(i,j)  # minimize d_is + d_sj
+16.        insert s into route (if feasible)
+17.    insert j into route
+18. If unvisited customers remain after all vehicles:
+19.    insert them by minimal cost insertion (respecting constraints)
+20. return path, total_distance
+Algorithm 3: CROSS-exchange local search (high-level)
+markdown
+Sao chép
+Chỉnh sửa
+Input: solution S (list of routes), Graph
+Output: improved S (if exists)
+
+1. improved <- True
+2. while improved:
+3.     improved <- False
+4.     split S into routes R = [r1, r2, ..., rk] (each route begins/ends with depot 0)
+5.     for each unordered pair (r_a, r_b), a != b:
+6.         for start_a in 1..len(r_a)-2:
+7.             for end_a in start_a..len(r_a)-2:
+8.                 segment_a <- r_a[start_a:end_a]
+9.                 for start_b in 1..len(r_b)-2:
+10.                    for end_b in start_b..len(r_b)-2:
+11.                        segment_b <- r_b[start_b:end_b]
+12.                        new_r_a <- r_a[0:start_a] + segment_b + r_a[end_a+1:]
+13.                        new_r_b <- r_b[0:start_b] + segment_a + r_b[end_b+1:]
+14.                        if check_feasible(new_r_a) and check_feasible(new_r_b):
+15.                            new_total_distance <- compute_total_distance(replace r_a,r_b)
+16.                            if new_total_distance < current_best_distance:
+17.                                accept move (first-improvement or store best)
+18.                                update routes, current_best_distance
+19.                                improved <- True
+20.                                break loops appropriately
+21. return rebuilt solution S and its distance
+Ghi chú:
+
+CROSS-exchange bao gồm special cases: Or-opt (segment rỗng swap), 2-opt* (khi segment đi tới depot), và intra-route Or-opt.
+
+Sau mỗi move ảnh hưởng tới vị trí trạm sạc, cần repair route bằng method equivalent stationInRe (tức chèn/tru trạm phù hợp) — trong code ta sẽ dùng _check_feasible() và, nếu cần, chèn station bằng select_closest_station().
+
+=================================================================
+
+PHAN 4: THIET KE FILES / MODULES (CHO BO CODE HIEN TAI)
+=================================================================
+
+Đề xuất cấu trúc file (dựa trên code bạn có):
+
+kotlin
+Sao chép
+Chỉnh sửa
+project/
+├─ target.py                 # chứa class Node, Vehicle (đã có)
+├─ evrptw_config.py          # Graph class (EvrptwGraph) (bạn đã có)
+├─ Ant.py                    # class Ant (bạn đã có)
+├─ ACS.py                    # class ACS, ACS_DIST, ACS_VEI (bạn đã có)
+├─ LocalSearch.py            # triển khai CROSS-exchange + _check_feasible (mình sẽ cung cấp)
+├─ MACS.py                   # coordinator (bạn đã có)
+├─ config.yaml               # tham số (alpha,beta,q0, rho, xi, num_ants, max_iter...)
+├─ instances/                # folder chứa instance files (theo định dạng parser)
+└─ run_macs.py               # script để chạy MACS với config và instance
+Vai tro cac file:
+target.py: class Node (fields: idx, node_type, x, y, demand, ready_time, due_date, service_time...), class Vehicle (stateful, used cho Ant).
+
+evrptw_config.py: đọc instance, tạo node list, calc distance matrix, nearest neighbor heuristic, select_closest_station, pheromone_matrix.
+
+Ant.py: xây dựng giải pháp theo Algorithm 2; local pheromone update; gọi _go_to_charging_station() khi cần.
+
+ACS.py: wrapper cho một colony; quản lý ants; global update; ACS_DIST apply local_search.run() cho best ant của iteration.
+
+LocalSearch.py: chứa class LocalSearch với run(solution, distance) thực thi CROSS exchange và _check_feasible(route).
+
+MACS.py: coordinator, theo Algorithm 1; cập nhật T_best; logic reset pheromone khi ACS-VEI tìm được m giảm.
+
+run_macs.py: script đọc config, khởi tạo MACS, chạy, lưu kết quả.
+
+=================================================================
+
+PHAN 5: LOCALSEARCH.PY - CODE CHI TIET (co _check_feasible)
+=================================================================
+
+Dưới đây là mã Python có thể dán vào file LocalSearch.py.
+Mình viết theo codebase của bạn (tương thích EvrptwGraph, node_dist_mat, nodes, tank_capacity, load_capacity, fuel_consumption_rate, velocity, v.v.).
+
+Lưu ý: code cố gắng cân bằng giữa độ đầy đủ và đơn giản để dễ tích hợp. Bạn có thể tối ưu sau.
+
+python
+Sao chép
+Chỉnh sửa
+# LocalSearch.py
+from copy import deepcopy
+
+class LocalSearch:
+    def __init__(self, graph):
+        self.graph = graph
+
+    def run(self, solution, distance):
+        """
+        CROSS-exchange local search implementation.
+
+        Input:
+            solution: list of node indices representing full solution path
+                      (ex: [0, ... ,0, ... ,0]) where each route begins and ends with depot 0.
+            distance: float, total distance of solution
+        Output:
+            best_solution: improved solution (list)
+            best_distance: improved distance
+        """
+        best_solution = solution[:]
+        best_distance = distance
+
+        # Split into routes (each route includes trailing depot)
+        routes = self._split_routes(best_solution)
+
+        improved = True
+        # First-improvement strategy
+        while improved:
+            improved = False
+            num_routes = len(routes)
+            # iterate through unordered pairs of routes (including same route for intra-route Or-opt)
+            for a in range(num_routes):
+                for b in range(a, num_routes):
+                    r_a = routes[a]
+                    r_b = routes[b]
+                    # skip trivial short routes
+                    if len(r_a) <= 2 and len(r_b) <= 2:
+                        continue
+
+                    # enumerate segments in r_a and r_b (segments exclude depot endpoints)
+                    for start_a in range(1, max(1, len(r_a)-1)):
+                        for end_a in range(start_a, len(r_a)-1):
+                            seg_a = r_a[start_a:end_a+1]
+
+                            for start_b in range(1, max(1, len(r_b)-1)):
+                                for end_b in range(start_b, len(r_b)-1):
+                                    seg_b = r_b[start_b:end_b+1]
+
+                                    # build new candidate routes
+                                    new_r_a = r_a[:start_a] + seg_b + r_a[end_a+1:]
+                                    new_r_b = r_b[:start_b] + seg_a + r_b[end_b+1:]
+
+                                    # feasibility check for the two affected routes
+                                    if not self._check_feasible(new_r_a):
+                                        continue
+                                    if not self._check_feasible(new_r_b):
+                                        continue
+
+                                    # build new routes list and compute distance
+                                    new_routes = routes.copy()
+                                    new_routes[a] = new_r_a
+                                    new_routes[b] = new_r_b
+
+                                    new_solution, new_distance = self._merge_routes(new_routes)
+
+                                    if new_distance + 1e-8 < best_distance:
+                                        # accept improvement
+                                        best_distance = new_distance
+                                        best_solution = new_solution
+                                        routes = self._split_routes(best_solution)
+                                        improved = True
+                                        # break out to outer loop for first-improvement
+                                        break
+                                if improved:
+                                    break
+                            if improved:
+                                break
+                        if improved:
+                            break
+                    if improved:
+                        break
+                if improved:
+                    break
+
+        return best_solution, best_distance
+
+
+    def _split_routes(self, path):
+        """
+        Convert full path (list) into list of routes (each route ends with depot 0).
+        Example: [0,1,2,0,3,4,0] -> [[0,1,2,0], [0,3,4,0]]
+        """
+        routes = []
+        route = []
+        for node in path:
+            route.append(node)
+            if node == 0 and len(route) > 1:
+                routes.append(route)
+                route = [0]
+        # Edge case: if last route wasn't appended because path doesn't end with depot - ensure it ends
+        if route != [0]:
+            route.append(0)
+            routes.append(route)
+        return routes
+
+    def _merge_routes(self, routes):
+        """
+        Convert list of routes back to solution path (list) and compute total distance.
+        Each route in routes should end with depot.
+        """
+        solution = []
+        total_dist = 0.0
+        for r in routes:
+            # ensure route begins with depot 0
+            if r[0] != 0:
+                r = [0] + r
+            # append all nodes except last depot to avoid duplicating depot between routes
+            solution.extend(r[:-1])
+            # compute distances on route
+            for i in range(len(r)-1):
+                total_dist += self.graph.node_dist_mat[r[i]][r[i+1]]
+        # finally append trailing depot
+        solution.append(0)
+        return solution, total_dist
+
+
+    def _check_feasible(self, route):
+        """
+        Check feasibility of a single route.
+        Inputs:
+            route: list of node indices (must start and end with depot 0)
+        Checks:
+            - capacity constraint (load)
+            - energy constraint (battery level), allowing full recharge at stations and depot
+            - time windows (ready_time/due_date) and service times
+        Returns:
+            True if feasible, False otherwise
+        """
+        # initial states
+        current_load = 0.0
+        current_battery = self.graph.tank_capacity
+        current_time = 0.0
+
+        # route should start with 0 (depot)
+        if route[0] != 0:
+            return False
+        # iterate edges
+        for idx in range(len(route)-1):
+            cur = route[idx]
+            nxt = route[idx+1]
+            node_cur = self.graph.nodes[cur]
+            node_nxt = self.graph.nodes[nxt]
+
+            # distance and battery usage
+            dist = self.graph.node_dist_mat[cur][nxt]
+            battery_usage = dist * self.graph.fuel_consumption_rate
+
+            # if cannot reach next node with current battery: infeasible
+            if current_battery + 1e-9 < battery_usage:
+                return False
+
+            # update time and battery by travel
+            travel_time = dist / self.graph.velocity
+            current_time += travel_time
+            current_battery -= battery_usage
+
+            # handle arrival at next node
+            if node_nxt.is_customer():
+                # capacity check
+                if current_load + node_nxt.demand > self.graph.load_capacity + 1e-9:
+                    return False
+                current_load += node_nxt.demand
+
+                # time window check
+                if current_time < node_nxt.ready_time:
+                    # wait
+                    current_time = node_nxt.ready_time
+                if current_time - 1e-9 > node_nxt.due_date:
+                    return False
+
+                # service time
+                current_time += node_nxt.service_time
+
+            elif node_nxt.is_station():
+                # For simplicity follow nearest_neighbor logic: fully recharge
+                # Optionally add realistic charging time:
+                # required_energy = self.graph.tank_capacity - current_battery
+                # charging_time = required_energy / self.graph.charging_rate
+                # current_time = max(current_time, node_nxt.ready_time) + node_nxt.service_time + charging_time
+                current_battery = self.graph.tank_capacity
+                # respect station ready_time and service_time if provided
+                if current_time < node_nxt.ready_time:
+                    current_time = node_nxt.ready_time
+                current_time += node_nxt.service_time
+
+            elif node_nxt.is_depot():
+                # reset vehicle state after return to depot
+                current_load = 0.0
+                current_battery = self.graph.tank_capacity
+                current_time = 0.0
+            else:
+                # unknown node type -> fail-safe
+                return False
+
+        # final sanity: ensure route ends at depot
+        if route[-1] != 0:
+            return False
+
+        return True
+Ghi chú quan trọng:
+
+_check_feasible() hiện giả định sạc đầy ngay lập tức tại trạm như nearest_neighbor_heuristic() trong evrptw_config.py. Nếu bạn muốn mô phỏng thời gian sạc theo năng lượng cần nạp, thay đoạn comment bằng tính charging_time = (Q - current_battery) / charging_rate, update current_time tương ứng.
+
+route phải chứa depot 0 làm điểm đầu và cuối.
+
+Trong một số case CROSS-exchange làm thay đổi vị trí trạm -> nếu route không feasible sau hoán đổi vì không có trạm ở giữa, _check_feasible() trả False; trong implement đầy đủ bạn có thể repair tự động: chèn station(s) vào để làm route trở lại feasible (dùng select_closest_station() và chèn).
+
+=================================================================
+
+PHAN 6: CAC THIET KE CHI TIET / HOP NHO THONG TIN CANH BAO
+=================================================================
+
+6.1 Dinh dang solution:
+Tại code hiện tại, solution là 1 list đơn: ex: [0, 5, 7, 0, 3, 4, 10, 0]. Moi 0 la depot ket thuc route.
+
+num_vehicles = solution.count(0) - 1
+
+6.2 Feasibility & Repair:
+CROSS-exchange khi hoan doi segements co the lam route vuot pin -> 2 huong:
+
+Loai bo move (return False) -> de _check_feasible decide.
+
+Hoac implement a repair_route(route):
+
+Lặp qua cặp node i->j trong route; nếu pin insufficient -> insert station s <- select_closest_station(i,j).
+
+Sau mỗi insert, re-evaluate time windows and loads.
+
+Mình recommend: ban dau su dung policy (1) de don gian. Sau khi chay o mot so instance, tu tinh them repair.
+
+6.3 Thoi gian sac va sac mot phan:
+Ham _check_feasible hien tai sac day tai tram. Neu muon partial recharge:
+
+Thay tactic: khi den station, chi sac needed_energy = min(Q, energy_for_next_segment + safety_margin) va tinh charging_time = needed_energy / charging_rate.
+
+Phuc tap tang len khi ham tai su dung nonlinear charging rates (thi phai linearlize hoac piecewise).
+
+6.4 Pheromone update tiep can:
+Sau khi ACS_DIST chay va local search thu duoc solution T_dist tien boi local search, phai global update tren T_dist (Graph.global_update_pheromone).
+
+ACS_VEI con update in_j cho cac customer unvisited.
+
+6.5 Tham so thong duong:
+Common params (co the luu trong config.yaml):
+
+yaml
+Sao chép
+Chỉnh sửa
+alpha: 1
+beta: 2
+q0: 0.9
+rho: 0.1
+xi: 0.1
+num_ants: 10
+max_iterations: 100
+local_update_xi: 0.1
+objective_weights: [w1, w2]  # neu dung weighted-sum
+=================================================================
+
+PHAN 7: HUONG DAN CHAY & TEST
+=================================================================
+
+Chuẩn bị config.yaml và instances/your_instance.txt.
+
+Chay: python run_macs.py --instance instances/your_instance.txt --config config.yaml
+
+Kiểm tra log:
+
+MACS sẽ in Starting MACS with initial solution: m vehicles, distance D.
+
+Sau moi iteration: in new global best tu ACS-DIST va thong bao neu ACS-VEI tim solution giam so xe.
+
+Debug tips:
+
+Nếu _check_feasible trả False cho route mà bạn cho rằng feasible: in trace (route, per-edge battery, time, load).
+
+Thực hiện small instance (5-15 customer) trước khi test large (100).
+
+Lưu random_seed de tái lập kết quả.
+
+Kiểm tra local search:
+
+Ghi lại distance trước/sau LocalSearch.run() cho 1 solution đơn lẻ.
+
+So sánh thoi gian chay: CROSS-exchange là O(n^4) neiive; cần giới hạn chiều dài segment (max_segment_len) để giảm độ phức tạp: ví dụ chỉ thử segment lengths <= 3.
+
+=================================================================
+
+PHAN 8: GOI Y TOI UU & MO RONG
+=================================================================
+
+Repair operator (stationInRe): tự động chèn station khi energy constraint vi pham; giúp local search phong phu hon.
+
+Giới hạn segment length: khi route dài, thử tầm segment length <= L_max (2..4).
+
+Heuristic selection of segments: ưu tiên segments gần depot hoặc có đóng góp lớn vào chi phí.
+
+Partial recharge: nếu mô hình đề cập partial recharge, sửa _check_feasible với charging_time tính theo energy cần nạp.
+
+Parallelize ants: ACS thực thi ants song song (thread/process) để tăng tốc.
+
+=================================================================
+
+PHAN 9: API VA CHU KY HAM (để code dễ tích hợp)
+=================================================================
+
+EvrptwGraph:
+
+node_dist_mat : numpy array [n x n]
+
+nodes : list of Node, mỗi Node có methods: is_customer(), is_station(), is_depot()
+
+select_closest_station(i, j) -> (station_idx, total_distance)
+
+nearest_neighbor_heuristic() -> (path, distance, vehicles)
+
+global_update_pheromone(path, distance)
+
+LocalSearch(graph):
+
+run(solution, distance) -> (new_solution, new_distance)
+
+uses _check_feasible(route)
+
+ACS_DIST(graph, params, local_search):
+
+run() builds ants, constructs solutions, applies local_search on best iteration solution, updates pheromone.
+
+MACS(instance_path, config):
+
+run() -> returns T_best (path, distance, num_vehicles)
+
+=================================================================
+
+PHAN 10: THEM MOT SO MAU CAI DAT NHANH (weighted objective in MACS.py)
+=================================================================
+Trong MACS.run() thay đoạn:
+
+python
+Sao chép
+Chỉnh sửa
+if num_vehicles_dist < self.T_best[2] or \
+   (num_vehicles_dist == self.T_best[2] and dist_distance < self.T_best[1]):
+    self.T_best = ...
+bằng:
+
+python
+Sao chép
+Chỉnh sửa
+def objective_score(nv, dist):
+    w1, w2 = self.config.get('objective_weights', (0.7, 0.3))
+    # Optionally normalize nv and dist
+    return w1 * nv + w2 * dist
+
+curr_score = objective_score(num_vehicles_dist, dist_distance)
+best_score = objective_score(self.T_best[2], self.T_best[1])
+if curr_score < best_score:
+    self.T_best = ...
+=================================================================
