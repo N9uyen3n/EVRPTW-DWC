@@ -1,6 +1,4 @@
-# Create a rich, complete README.md for the user's GitHub repo, based on their notebook and prior discussion.
-
-readme = r"""# EVRPTW-DWC: Electric Vehicle Routing with Time Windows and Dynamic Wireless Charging
+# EVRPTW-DWC: Electric Vehicle Routing with Time Windows and Dynamic Wireless Charging
 
 > **Status:** Research code accompanying an internship report and a paper submission to **COMOSA 2025** (International Conference on Computation and Optimization).  
 > **Notebook:** `EVRPTW_DWC.ipynb` (end-to-end modeling + experiments).
@@ -30,17 +28,36 @@ The notebook also includes a **metaheuristic layer (MACS-DWC)** for constructive
 - Decision variables: \(x_{ij}\) (route), \(\tau_j\) (arrival time), \(u_j\) (remaining load), \(y_j\) (state of charge).
 
 **Objective (hierarchical):**
-\[
+
+$$
 \min\; M_1\sum_{i\in I} x_{Di} \;+\; M_2\sum_{(i,j)\in A} d_{ij}x_{ij} \;+\; 
 M_3\Big(\sum_{(i,j)\in A} t_{ij}x_{ij} + \sum_{i\in I}s_i\sum_{(j,i)\in A}x_{ji} + gQ\sum_{i\in F_{\text{rep}}}\sum_{(j,i)\in A}x_{ji} \Big).
-\]
+$$
 
-**Feasibility:** flow conservation, depot balance, time windows with big-M, capacity tracking, and **energy management** that blends consumption \((r\,d_{ij})\) with DWC gains \((w\,d_{ij}\,\omega_{ij})\), plus full recharge at visited stations.
+**Feasibility:** flow conservation, depot balance, time windows with big-M, capacity tracking,  
+and **energy management** that blends consumption $(r\,d_{ij})$ with DWC gains $(w\,d_{ij}\,\omega_{ij})$,  
+plus full recharge at visited stations.
 
-> See the report and notebook for the complete mathematical model and algorithmic details (Construct\_Solution, Optimal\_Partial\_Charge, ACS-DIST/ACS-VEI, and global pheromone updates).
+> See the report and notebook for the complete mathematical model and algorithmic details  
+> (Construct_Solution, Optimal_Partial_Charge, ACS-DIST/ACS-VEI, and global pheromone updates).
+
+
+
+> If you use additional instances, place them under `data/` and update the notebook paths accordingly.
 
 ---
 
-## 📂 Repository Structure
+## 🛠️ Environment & Dependencies
+
+- **Hardware:** tested on Intel Core i5-13420H, 16GB RAM.
+- **Software:** Python 3.9, Jupyter.  
+- **Key packages:** `pulp`, `cplex` (optional but recommended), `numpy`, `pandas`, `matplotlib`.
+
+Install (CPU-only):
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -U pip
+pip install pulp numpy pandas matplotlib
 
 
